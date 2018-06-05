@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='crypto_analysis-master',
+    name='crypto-analyzer',
     version='0.1.0',
     packages=['crypto-analyzer'],
     url='',
