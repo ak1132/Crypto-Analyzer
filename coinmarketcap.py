@@ -1,9 +1,3 @@
-
-# coding: utf-8
-
-# In[2]:
-
-
 import json 
 import requests 
 import pandas as pd
@@ -12,7 +6,6 @@ import sys
 import collections
 
 r = requests.get('https://api.coinmarketcap.com/v2/listings/')
-#print(r.json()['data'])
 length = len(r.json()['data'])
 print(length)
 res = []
@@ -24,9 +17,7 @@ for i in range(1,length+1,100):
         #print(attribute,value)
         
         for id,val in value.items():
-            #print(id,val)
             coin = {}
-            #print(val)
             if type(val) is dict:
                 for key in val:
                     if key == "quotes": 
@@ -44,8 +35,7 @@ for i in range(1,length+1,100):
                     coin[key] = val[key]
             j =j+1
             coins_list.append(coin)
-#print(coins_list)
 dataframe = pd.DataFrame(coins_list)
 dataframe.to_csv('coinmarketcap.csv')
-print("Done")
+
 

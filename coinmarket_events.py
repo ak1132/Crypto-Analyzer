@@ -60,7 +60,7 @@ def query_coinmarketcal_get_events_list(access_token):
                 loop = False
                 break
             i = i + 1
-            for item in response:
+            for _ in response:
                 final_response.append(response)
         except Exception as e:
             logging.error("Failure while querying {query}. \n{err}".format(query=events_url, err=e))
