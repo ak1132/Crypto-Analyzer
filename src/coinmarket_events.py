@@ -67,9 +67,8 @@ def query_coinmarketcal_get_events_list(access_token):
             loop = False
     return final_response
 
-
-json_response = query_coinmarketcal_get_events_list(
+if __name__=='__main__':
+    json_response = query_coinmarketcal_get_events_list(
     query_coinmarketcal_get_access_token(grant_type, client_id, client_secret)['access_token'])
-df = pd.DataFrame(json_response)
-df.to_csv("Events.csv")
-print("Done")
+    df = pd.DataFrame(json_response)
+    df.to_csv("Events.csv")

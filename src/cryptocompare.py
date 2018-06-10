@@ -117,19 +117,11 @@ def get_coin_list():
     header, data = get_data(resp)
     return data
 
-# coins = get_coin_list()
-# COIN_DB = pd.DataFrame.from_dict(coins, orient='index')
-# print(COIN_DB.head())
-
 
 def get_exchanges_list():
     """ Get a list of all exchanges on CryptoCompare """
     data = query_cryptocompare(get_url('exchanges'))
     return data
-
-# exchanges = get_exchanges_list()
-# EXCHANGE_DB = pd.DataFrame.from_dict(e, orient='index')
-# print(EXCHANGE_DB.head())
 
 
 def get_price(coin, to_curr=CURR, exchange=EXCHANGE, **kwargs):
@@ -155,10 +147,6 @@ def get_price(coin, to_curr=CURR, exchange=EXCHANGE, **kwargs):
             )
         )
 
-# print(get_price(COIN))
-# print(get_price(COIN_LIST))
-# print(get_price(COIN_LIST, ['USD', 'ETH', 'LTC']))
-
 
 def get_historical_price_timestamp(coin, to_curr=CURR, timestamp=time.time(), exchange=EXCHANGE, **kwargs):
     """ Get value of coin in currency at a particular timestamp """
@@ -176,8 +164,6 @@ def get_historical_price_timestamp(coin, to_curr=CURR, timestamp=time.time(), ex
         )
     )
 
-# print(get_historical_price_timestamp(COIN))
-
 
 def get_historical_price_day(coin, to_curr=CURR, timestamp=time.time(), exchange=EXCHANGE, allData='false', **kwargs):
     """ Get price per day for the past month """
@@ -192,10 +178,6 @@ def get_historical_price_day(coin, to_curr=CURR, timestamp=time.time(), exchange
         )
     )
     df =  get_readable_df(resp)
-    #df['coin'] = coin
-    #print("Coin inserted in Dataframe")
-    #df.set_index(['coin', 'time'])
-    #print("Coin and Time index Set")
     return df
 
 
@@ -203,15 +185,10 @@ def get_historical_price_last_day(*args, **kwargs):
     """ Get price for last day """
     return get_historical_price_day(*args, **kwargs, limit=1)
 
-# print(get_historical_price_day(COIN))
-# print(get_historical_price_last_day(coin='ZRX', to_curr='BTC', exchange='Binance'))
-
 
 def get_historical_price_day_full(*args, **kwargs):
     """ Get price per day for all time  """
     return get_historical_price_day(*args, **kwargs, allData='true')
-
-# print(get_historical_price_day_full(COIN))
 
 
 def get_historical_price_hour(coin, to_curr=CURR, exchange=EXCHANGE, limit=168, **kwargs):
@@ -226,16 +203,12 @@ def get_historical_price_hour(coin, to_curr=CURR, exchange=EXCHANGE, limit=168, 
             **kwargs
         )
     )
-    #print(resp)
     return get_readable_df(resp)
 
 
 def get_historical_price_last_hour(*args, **kwargs):
     """ Get price for the last hour """
     return get_historical_price_hour(*args, **kwargs, limit=1)
-
-# coin_hour = get_historical_price_hour(COIN)
-# print(coin_hour.head())
 
 
 def get_historical_price_minute(coin, to_curr=CURR, exchange=EXCHANGE, toTs=time.time(), **kwargs):
@@ -252,8 +225,6 @@ def get_historical_price_minute(coin, to_curr=CURR, exchange=EXCHANGE, toTs=time
     )
     return get_readable_df(resp)
 
-# print(get_historical_price_minute(COIN))
-
 
 def get_historical_price_minute_by_day(*args, days_ago=0, **kwargs):
     """ Get price per min for 24 hours till days_ago """
@@ -264,5 +235,3 @@ def get_historical_price_minute_by_day(*args, days_ago=0, **kwargs):
     ts = datetime.datetime.today() - datetime.timedelta(days_ago)
     ts = time.mktime(ts.timetuple())
     return get_historical_price_minute(*args, **kwargs, toTs=int(ts))
-
-# print(get_historical_price_minute_by_day(COIN, days_ago=7))
