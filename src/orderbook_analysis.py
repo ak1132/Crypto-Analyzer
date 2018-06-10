@@ -9,7 +9,6 @@ import importlib
 import dateutil.parser
 import numpy as np
 import pandas as pd
-from importlib import reload
 from collections import defaultdict
 import sys
 import inspect
@@ -50,11 +49,11 @@ def get_coin_exchange_past_trades(csv_filename, exchange):
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
 
         for key, item in df_groupby:
-            to_curr = 'BTC'
+            to_coin = 'BTC'
             if key == 'IDEX':
-                to_curr = 'ETH'
+                to_coin = 'ETH'
                 continue
-            symbol = coin_name + "/" + to_curr
+            symbol = coin_name + "/" + to_coin
             print(coin_name, key, start)
             past_trades = list_of_exchanges[key].fetchTrades(symbol)
             if len(past_trades) == 0:
@@ -74,8 +73,9 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
                                  datetimeformat_string, exchange):
     """ Update the given csv_file with new column values for corr rows """
     fields = ['coin', 'exchange', 'time']
+    path = "../data/" + csv_filename
     df_csv = pd.read_csv(
-        csv_filename, index_col=None, skipinitialspace=True, usecols=fields)
+        path, index_col=None, skipinitialspace=True, usecols=fields)
     df_csv = df_csv.set_index(['coin', 'exchange', 'time'])
     data = list(df_csv.index.get_level_values(0).unique())
     i = 0
@@ -90,15 +90,23 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
 
         for key, item in df_groupby:
-            to_curr = 'BTC'
+            to_coin = 'BTC'
+
             if key == 'IDEX':
-                to_curr = 'ETH'
+                to_coin = 'ETH'
                 continue
+
             if coin_name == "BTC":
-                to_curr = "USD"
-            symbol = coin_name + "/" + to_curr
-            print(coin_name, key, start)
-            order_book_json = list_of_exchanges[key].fetch_order_book(symbol)
+                to_coin = "USD"
+            symbol = coin_name + "/" + to_coin
+
+            try:
+                order_book_json = list_of_exchanges[key].fetch_order_book(
+                    symbol)
+            except Exception as e:
+                logging.log(logging.DEBUG, e)
+                continue
+
             if bool(order_book_json) == False:
                 print("Order book Not Retrieved", coin_name, key)
                 j = j + 1
@@ -117,6 +125,7 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
                 bid_json['coin'] = coin_name
                 bid_json['exchange'] = key
                 create_bid_json.append(bid_json)
+
             order_book_asks = order_book_json['asks']
             create_ask_json = []
             if len(order_book_asks) == 0:
@@ -131,6 +140,7 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
                 ask_json['coin'] = coin_name
                 ask_json['exchange'] = key
                 create_ask_json.append(ask_json)
+
             df1 = pd.DataFrame(create_bid_json)
             df2 = pd.DataFrame(create_ask_json)
             size = df1.shape[0]
@@ -169,6 +179,7 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
             order_book_array.append(result)
     pd.concat(order_book_array).set_index('id').to_csv('order_book_csv_' +
                                                        exchange + '.csv')
+    logging.log(logging.INFO, csv_filename + " generated successfully")
 
 
 def order_book_analysis(csv_filename, order_book_filename, exchange):
@@ -264,11 +275,11 @@ def order_book_and_price_bollinger_band_analysis(
 
 
 if __name__ == '__main__':
-    get_coin_exchange_past_trades('all_coins_day_full_1day.csv',
-                                  'Bittrex-Binance-Kucoin')
+    '''get_coin_exchange_past_trades('all_coins_day_full_1day.csv',
+                                  'Bittrex-Binance-Kucoin')'''
     get_coin_exchange_order_book('all_coins_day_full_1day.csv', 250, '1day',
                                  '%d-%m-%Y %H:%M', 'Bittrex-Binance-Kucoin')
-    get_coin_exchange_order_book('all_coins_day_full_1day_Cryptopia.csv', 250,
+    '''get_coin_exchange_order_book('all_coins_day_full_1day_Cryptopia.csv', 250,
                                  '1day', '%d-%m-%Y %H:%M', 'Cryptopia')
     get_coin_exchange_order_book('BTC_Bitfinex_day_full_1day.csv', 250, '1day',
                                  '%d-%m-%Y %H:%M', 'Bitfinex')
@@ -292,4 +303,4 @@ if __name__ == '__main__':
         'all_coins_day_full_14days_Cryptopia.csv', 25, 15)
     order_book_and_price_bollinger_band_analysis(
         'Order_Book_Analysis_Cryptopia.csv',
-        'all_coins_day_full_7days_Cryptopia.csv', 25, 15)
+        'all_coins_day_full_7days_Cryptopia.csv', 25, 15)'''
