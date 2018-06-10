@@ -29,12 +29,14 @@ list_of_exchanges = {
     "Cryptopia": cryptopia_exchange,
     "Bitfinex": bitfinex_exchange
 }
+ABSOLUTE_PATH = "../data/"
 
 
 def get_coin_exchange_past_trades(csv_filename, exchange):
     fields = ['coin', 'exchange', 'time']
+    path = ABSOLUTE_PATH + csv_filename
     df_csv = pd.read_csv(
-        csv_filename, index_col=None, skipinitialspace=True, usecols=fields)
+        path, index_col=None, skipinitialspace=True, usecols=fields)
     df_csv = df_csv.set_index(['coin', 'exchange', 'time'])
     data = list(df_csv.index.get_level_values(0).unique())
     i = 0
@@ -73,7 +75,11 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
                                  datetimeformat_string, exchange):
     """ Update the given csv_file with new column values for corr rows """
     fields = ['coin', 'exchange', 'time']
+<<<<<<< HEAD
     path = "../data/" + csv_filename
+=======
+    path = ABSOLUTE_PATH + csv_filename
+>>>>>>> exception handling for order_book_analysis
     df_csv = pd.read_csv(
         path, index_col=None, skipinitialspace=True, usecols=fields)
     df_csv = df_csv.set_index(['coin', 'exchange', 'time'])
@@ -183,7 +189,8 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
 
 
 def order_book_analysis(csv_filename, order_book_filename, exchange):
-    df_csv = pd.read_csv(csv_filename)
+    path = ABSOLUTE_PATH + csv_filename
+    df_csv = pd.read_csv(path)
     df_csv = df_csv.set_index(['coin', 'exchange', 'unix_timestamp'])
     df2 = pd.read_csv(order_book_filename)
     data = list(df_csv.index.get_level_values(0).unique())
@@ -222,14 +229,15 @@ def order_book_analysis(csv_filename, order_book_filename, exchange):
             ]
             row = row[columns_wanted]
             rows.append(row)
-    pd.concat(rows).to_csv('Order_Book_Analysis_' + exchange + '.csv')
+    pd.concat(rows).to_csv(ABSOLUTE_PATH + 'Order_Book_Analysis_' + exchange +
+                           '.csv')
 
 
 def order_book_and_price_bollinger_band_analysis(
         order_book_analysis_file, all_coins_day_full, bollinger_band_value,
         number_of_orders):
     """For every exchange this function will give me all coins which are very down and have a big buy wall. Those coins are most likely to increase"""
-    df_csv = pd.read_csv(all_coins_day_full)
+    df_csv = pd.read_csv(ABSOLUTE_PATH + all_coins_day_full)
     df_csv = df_csv.set_index(['coin', 'exchange', 'unix_timestamp'])
     data = list(df_csv.index.get_level_values(0).unique())
     i = 0
