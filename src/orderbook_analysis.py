@@ -75,11 +75,7 @@ def get_coin_exchange_order_book(csv_filename, periods, timeframe,
                                  datetimeformat_string, exchange):
     """ Update the given csv_file with new column values for corr rows """
     fields = ['coin', 'exchange', 'time']
-<<<<<<< HEAD
-    path = "../data/" + csv_filename
-=======
     path = ABSOLUTE_PATH + csv_filename
->>>>>>> exception handling for order_book_analysis
     df_csv = pd.read_csv(
         path, index_col=None, skipinitialspace=True, usecols=fields)
     df_csv = df_csv.set_index(['coin', 'exchange', 'time'])
