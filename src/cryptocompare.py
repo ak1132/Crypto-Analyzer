@@ -48,18 +48,27 @@ def get_url(query_name, **kwargs):
     query_url = API_ENDPOINT + query_data['url']
     query_arguments = []
     # Check if all the required arguments are provided
-    if 'required' in query_data['parameters'].keys() and any(argument not in kwargs for argument in query_data['parameters']['required']):
+    if 'required' in query_data['parameters'].keys() and any(
+            argument not in kwargs
+            for argument in query_data['parameters']['required']):
         logging.info("Not all required arguments provided for {query}. "
-                     "Required arguments are {args}.".format(query=query_name, args=query_data['parameters']['required']))
+                     "Required arguments are {args}.".format(
+                         query=query_name,
+                         args=query_data['parameters']['required']))
         return None
     else:
-        possible_query_arguments = list(query_data.get('parameters', {}).get('required', {}).keys()) + list(query_data.get('parameters', {}).get('additional', {}).keys())
+        possible_query_arguments = list(
+            query_data.get('parameters',
+                           {}).get('required', {}).keys()) + list(
+                               query_data.get('parameters', {}).get(
+                                   'additional', {}).keys())
         for argument, value in kwargs.items():
             if argument in possible_query_arguments:
-                query_arguments.append("{argument}={value}".format(argument=argument, value=format_parameter(value)))
+                query_arguments.append("{argument}={value}".format(
+                    argument=argument, value=format_parameter(value)))
 
     query = query_url + '?' + '&'.join(query_arguments)
-    #print(query)
+    # print(query)
     return query
 
 
@@ -67,9 +76,10 @@ def query_cryptocompare(url):
     """ Query CryptoCompare API """
     try:
         response = requests.get(url).json()
-        #print(response)
+        # print(response)
     except Exception as e:
-        logging.error("Failure while querying {query}. \n{err}".format(query=url, err=e))
+        logging.error("Failure while querying {query}. \n{err}".format(
+            query=url, err=e))
         return None
 
     if not response or 'Response' not in response.keys():
@@ -84,7 +94,8 @@ def query_cryptocompare(url):
 def convert_timestamp(timestamp):
     """ Convert timestamp into readable datetime """
     try:
-        return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%d-%m-%Y %H:%M:%S')
+        # return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%d-%m-%Y %H:%M')
+        return timestamp
     except Exception as e:
         logging.debug(e)
         return None
@@ -92,7 +103,10 @@ def convert_timestamp(timestamp):
 
 def get_data(response):
     """ Separate query data from response """
-    header = {key: (value if key != 'Data' else len(value)) for key, value in response.items()}
+    header = {
+        key: (value if key != 'Data' else len(value))
+        for key, value in response.items()
+    }
     data = response['Data']
     return header, data
 
@@ -100,11 +114,15 @@ def get_data(response):
 def get_readable_df(response):
     """ Extract data from given response and return a dataframe """
     header, data = get_data(response)
+    if data is None:
+        return None
     try:
         df_data = pd.DataFrame(data)
-        df_data = df_data.rename(columns={'time': 'timestamp'})
-        df_data['time'] = df_data.timestamp.apply(convert_timestamp)
-        df_data = df_data.set_index('time')
+        df_data = df_data.rename(columns={'time': 'unix_timestamp'})
+        if 'unix_timestamp' in df_data:
+            df_data = df_data.set_index('unix_timestamp')
+        else:
+            return None
     except AttributeError as e:
         logging.debug(e)
         return None
@@ -129,26 +147,17 @@ def get_price(coin, to_curr=CURR, exchange=EXCHANGE, **kwargs):
     if isinstance(coin, list):
         return query_cryptocompare(
             get_url(
-                'pricemulti',
-                fsyms=coin,
-                tsyms=to_curr,
-                e=exchange,
-                **kwargs
-            )
-        )
+                'pricemulti', fsyms=coin, tsyms=to_curr, e=exchange, **kwargs))
     else:
         return query_cryptocompare(
-            get_url(
-                'price',
-                fsym=coin,
-                tsyms=to_curr,
-                e=exchange,
-                **kwargs
-            )
-        )
+            get_url('price', fsym=coin, tsyms=to_curr, e=exchange, **kwargs))
 
 
-def get_historical_price_timestamp(coin, to_curr=CURR, timestamp=time.time(), exchange=EXCHANGE, **kwargs):
+def get_historical_price_timestamp(coin,
+                                   to_curr=CURR,
+                                   timestamp=time.time(),
+                                   exchange=EXCHANGE,
+                                   **kwargs):
     """ Get value of coin in currency at a particular timestamp """
     if isinstance(timestamp, datetime.datetime):
         timestamp = time.mktime(timestamp.timetuple())
@@ -160,12 +169,15 @@ def get_historical_price_timestamp(coin, to_curr=CURR, timestamp=time.time(), ex
             tsyms=to_curr,
             ts=int(timestamp),
             e=exchange,
-            **kwargs
-        )
-    )
+            **kwargs))
 
 
-def get_historical_price_day(coin, to_curr=CURR, timestamp=time.time(), exchange=EXCHANGE, allData='false', **kwargs):
+def get_historical_price_day(coin,
+                             to_curr=CURR,
+                             timestamp=time.time(),
+                             exchange=EXCHANGE,
+                             allData='false',
+                             **kwargs):
     """ Get price per day for the past month """
     resp = query_cryptocompare(
         get_url(
@@ -174,10 +186,8 @@ def get_historical_price_day(coin, to_curr=CURR, timestamp=time.time(), exchange
             tsym=to_curr,
             e=exchange,
             allData=allData,
-            **kwargs
-        )
-    )
-    df =  get_readable_df(resp)
+            **kwargs))
+    df = get_readable_df(resp)
     return df
 
 
@@ -191,7 +201,11 @@ def get_historical_price_day_full(*args, **kwargs):
     return get_historical_price_day(*args, **kwargs, allData='true')
 
 
-def get_historical_price_hour(coin, to_curr=CURR, exchange=EXCHANGE, limit=168, **kwargs):
+def get_historical_price_hour(coin,
+                              to_curr=CURR,
+                              exchange=EXCHANGE,
+                              limit=168,
+                              **kwargs):
     """ Get price per hour for past 7 days """
     resp = query_cryptocompare(
         get_url(
@@ -200,9 +214,8 @@ def get_historical_price_hour(coin, to_curr=CURR, exchange=EXCHANGE, limit=168, 
             tsym=to_curr,
             e=exchange,
             limit=limit,
-            **kwargs
-        )
-    )
+            **kwargs))
+    # print(resp)
     return get_readable_df(resp)
 
 
@@ -211,7 +224,11 @@ def get_historical_price_last_hour(*args, **kwargs):
     return get_historical_price_hour(*args, **kwargs, limit=1)
 
 
-def get_historical_price_minute(coin, to_curr=CURR, exchange=EXCHANGE, toTs=time.time(), **kwargs):
+def get_historical_price_minute(coin,
+                                to_curr=CURR,
+                                exchange=EXCHANGE,
+                                toTs=time.time(),
+                                **kwargs):
     """ Get price per min for past 24 hours """
     resp = query_cryptocompare(
         get_url(
@@ -220,16 +237,16 @@ def get_historical_price_minute(coin, to_curr=CURR, exchange=EXCHANGE, toTs=time
             tsym=to_curr,
             e=exchange,
             toTs=int(toTs),
-            **kwargs
-        )
-    )
+            **kwargs))
     return get_readable_df(resp)
 
 
 def get_historical_price_minute_by_day(*args, days_ago=0, **kwargs):
     """ Get price per min for 24 hours till days_ago """
     if days_ago > 7:
-        logging.error("Can not get information by minute for more than 7 days. Getting information for last possible day.")
+        logging.error(
+            "Can not get information by minute for more than 7 days. Getting information for last possible day."
+        )
         days_ago = 7
     days_ago -= 1  # Subtracting one day as toTs considers ending timestamp
     ts = datetime.datetime.today() - datetime.timedelta(days_ago)
