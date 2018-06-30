@@ -263,6 +263,7 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 (req_data.index.get_level_values(2) >= start_date)
                 & (req_data.index.get_level_values(2) <= end_date)]
             np_volumeto = np.array(req_data2.volumeto.values, dtype='f8')
+
             if len(np_volumeto) < 20:
                 j = j + 1
                 print(coin_name, j, " Not Updated")
@@ -279,7 +280,7 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             req_data2[
                 'STOCH_PERCENT_D_MONEY_FLOW_INDEX'] = pyti.simple_moving_average.simple_moving_average(
                     req_data2.STOCH_PERCENT_K_MONEY_FLOW_INDEX.values, 3)
-            req_data2['RSI'] = RSI(
+            req_data2['RSI'] = talib.func.RSI(
                 req_data2.close.values, timeperiod=RSI_PERIOD)
             req_data2['RSI_OVER_BOUGHT'] = np.where(
                 (req_data2.RSI >= RSI_OVER_BOUGHT) &
@@ -305,8 +306,8 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 (req_data2.STOCH_PERCENT_K <= STOCH_OVER_SOLD) &
                 (req_data2.STOCH_PERCENT_K >=
                  req_data2.STOCH_PERCENT_K.shift(1)), 1, 0)
-            req_data2['SMA_FAST'] = SMA(req_data2.close.values, 7)
-            req_data2['SMA_SLOW'] = SMA(req_data2.close.values, 21)
+            req_data2['SMA_FAST'] = talib.func.SMA(req_data2.close.values, 7)
+            req_data2['SMA_SLOW'] = talib.func.SMA(req_data2.close.values, 21)
             req_data2['SMA_TEST'] = np.where(
                 req_data2.SMA_FAST > req_data2.SMA_SLOW, 1, 0)
             req_data2[
@@ -315,11 +316,12 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             req_data2['ON_BALANCE_VOLUME_TEST'] = np.where(
                 req_data2.ON_BALANCE_VOLUME >
                 req_data2.ON_BALANCE_VOLUME.shift(1), 1, 0)
-            req_data2['MACD'], req_data2['MACD_SIGNAL'], MACD_HISTOGRAM = MACD(
-                req_data2.close.values,
-                fastperiod=MACD_FAST,
-                slowperiod=MACD_SLOW,
-                signalperiod=MACD_SIGNAL)
+            req_data2['MACD'], req_data2[
+                'MACD_SIGNAL'], MACD_HISTOGRAM = talib.func.MACD(
+                    req_data2.close.values,
+                    fastperiod=MACD_FAST,
+                    slowperiod=MACD_SLOW,
+                    signalperiod=MACD_SIGNAL)
             req_data2['MACD_TEST'] = np.where(
                 req_data2.MACD > req_data2.MACD_SIGNAL, 1, 0)
 
