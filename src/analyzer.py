@@ -23,9 +23,7 @@ import os
 import time
 import talib
 import logging
-import requests
 import datetime
-import importlib
 import dateutil.parser
 import ccxt
 import numpy as np
@@ -40,8 +38,10 @@ from pyti import simple_moving_average
 from pyti import stochrsi
 from pyti import on_balance_volume
 import cryptocompare as ccw
+from database import DbClient
+
 LOGGING_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
-logging.basicConfig(format=LOGGING_FORMAT, level=logging.INFO)
+logging.basicConfig(format=LOGGING_FORMAT)
 
 PRICE = 'PRICE'
 HIGH = 'HIGH24HOUR'
@@ -85,7 +85,8 @@ STOCH_OVER_BOUGHT = 70
 STOCH_OVER_SOLD = 30
 
 # Maps csv (future data objects) to period granularity
-# If we store all data together in a single data source, we'll change this to a function which returns corresponding rows
+# If we store all data together in a single data source,
+# we'll change this to a function which returns corresponding rows
 data_csv_period_mapping = {
     "1day": 'all_coins_day_full_1day.csv',
     "1hour": 'all_coins_hour_full_1hour.csv',
@@ -116,7 +117,9 @@ indicator_list = [
     'MACD_SIGNAL', 'MACD_TEST', 'ON_BALANCE_VOLUME', 'ON_BALANCE_VOLUME_TEST'
 ]
 
-# For every exchange, fetch it's markets. Then depending on the JSON returned, prepare a list of coins for which historical data has to be downloaded.
+
+# For every exchange, fetch it's markets. Then depending on the JSON returned,
+# prepare a list of coins for which historical data has to be downloaded.
 
 
 def setupExchanges(list_of_exchanges):
@@ -158,10 +161,12 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
         # existing_coin_exchange is a list of tuples (coin, exchange)
         existing_coin_exchange = np.unique(df_csv_all_coins_full.index.values)
         coin_exchange_combination_in_excel = {}
+
         for a, b in existing_coin_exchange:
             coin_exchange_combination_in_excel.setdefault(a, []).append(b)
     number_of_coins = 0
     coin_exchange_combination_to_delete = {}
+
     for exchange in coin_exchange_combination:
         if exchange not in coin_exchange_combination_in_excel:
             continue
@@ -172,7 +177,7 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
         coins_to_delete = list(
             set(coins_list_from_excel) - set(coins_list_from_exchange))
         coin_exchange_combination_to_delete[exchange] = coins_to_delete
-        print(exchange, coins_to_download)
+        logging.log(exchange, coins_to_download)
         for symbol in coins_to_download:
             # For every symbol-exchange combination, if it is present in CSV,don't download historical Data for it.
             try:
@@ -216,19 +221,19 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
         "Did not update the following. Try again.\n {not_updated}".format(
             not_updated=not_updated))
 
-    delete_coins_from_CSV(coin_exchange_combination_to_delete,
+    delete_coins_from_csv(coin_exchange_combination_to_delete,
                           df_csv_all_coins_full.reset_index(),
                           csv_filename_read)
 
 
-def delete_coins_from_CSV(coin_exchange_combination_to_delete,
+def delete_coins_from_csv(coin_exchange_combination_to_delete,
                           df_csv_all_coins_full, csv_filename_read):
     for exchange in coin_exchange_combination_to_delete:
         coins_list_to_delete = coin_exchange_combination_to_delete[exchange]
         for symbol in coins_list_to_delete:
             df_csv_all_coins_full = df_csv_all_coins_full[~(
-                (df_csv_all_coins_full['coin'] == symbol) &
-                (df_csv_all_coins_full['exchange'] == exchange))]
+                    (df_csv_all_coins_full['coin'] == symbol) &
+                    (df_csv_all_coins_full['exchange'] == exchange))]
     df_csv_all_coins_full.set_index(
         ['coin', 'exchange', 'unix_timestamp']).to_csv(csv_filename_read)
 
@@ -242,16 +247,18 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
     for indicator in indicator_list:
         if indicator not in df_csv.columns and indicator not in df_csv.index:
             df_csv[indicator] = np.nan
+
     df_csv = df_csv.set_index(['coin', 'exchange', 'unix_timestamp'])
     data = list(df_csv.index.get_level_values(0).unique())
     i = 0
     j = 0
+
     for coin_name in data:
         coin_df = df_csv[df_csv.index.get_level_values(0) == coin_name]
         coin_df = coin_df.reset_index()
         coin_df = coin_df.sort_values(
             by=['exchange', 'unix_timestamp']).set_index(
-                ['coin', 'exchange', 'unix_timestamp'])
+            ['coin', 'exchange', 'unix_timestamp'])
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
         for key, item in df_groupby:
             req_data = df_groupby.get_group(key)
@@ -270,16 +277,16 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 continue
             req_data2[
                 'BBANDS_BANDWIDTH_PERCENT'] = pyti.bollinger_bands.percent_b(
-                    req_data2.close.values, 20)
+                req_data2.close.values, 20)
             req_data2['MONEY_FLOW_INDEX'] = money_flow_index.money_flow_index(
                 req_data2.close.values, req_data2.high.values,
                 req_data2.low.values, np_volumeto, 14)
             req_data2[
                 'STOCH_PERCENT_K_MONEY_FLOW_INDEX'] = pyti.stochastic.percent_k(
-                    req_data2.MONEY_FLOW_INDEX.values, 14) * 100
+                req_data2.MONEY_FLOW_INDEX.values, 14) * 100
             req_data2[
                 'STOCH_PERCENT_D_MONEY_FLOW_INDEX'] = pyti.simple_moving_average.simple_moving_average(
-                    req_data2.STOCH_PERCENT_K_MONEY_FLOW_INDEX.values, 3)
+                req_data2.STOCH_PERCENT_K_MONEY_FLOW_INDEX.values, 3)
             req_data2['RSI'] = talib.func.RSI(
                 req_data2.close.values, timeperiod=RSI_PERIOD)
             req_data2['RSI_OVER_BOUGHT'] = np.where(
@@ -292,12 +299,12 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 req_data2.close.values, 14)
             req_data2[
                 'STOCHRSI_D'] = pyti.simple_moving_average.simple_moving_average(
-                    req_data2.STOCHRSI_K.values, 3)
+                req_data2.STOCHRSI_K.values, 3)
             req_data2['STOCH_PERCENT_K'] = pyti.stochastic.percent_k(
                 req_data2.high.values, 14) * 100
             req_data2[
                 'STOCH_PERCENT_D'] = pyti.simple_moving_average.simple_moving_average(
-                    req_data2.STOCH_PERCENT_K.values, 3)
+                req_data2.STOCH_PERCENT_K.values, 3)
             req_data2['STOCH_OVER_BOUGHT'] = np.where(
                 (req_data2.STOCH_PERCENT_K >= STOCH_OVER_BOUGHT) &
                 (req_data2.STOCH_PERCENT_K <=
@@ -312,16 +319,16 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 req_data2.SMA_FAST > req_data2.SMA_SLOW, 1, 0)
             req_data2[
                 'ON_BALANCE_VOLUME'] = on_balance_volume.on_balance_volume(
-                    req_data2.close.values, np_volumeto)
+                req_data2.close.values, np_volumeto)
             req_data2['ON_BALANCE_VOLUME_TEST'] = np.where(
                 req_data2.ON_BALANCE_VOLUME >
                 req_data2.ON_BALANCE_VOLUME.shift(1), 1, 0)
             req_data2['MACD'], req_data2[
                 'MACD_SIGNAL'], MACD_HISTOGRAM = talib.func.MACD(
-                    req_data2.close.values,
-                    fastperiod=MACD_FAST,
-                    slowperiod=MACD_SLOW,
-                    signalperiod=MACD_SIGNAL)
+                req_data2.close.values,
+                fastperiod=MACD_FAST,
+                slowperiod=MACD_SLOW,
+                signalperiod=MACD_SIGNAL)
             req_data2['MACD_TEST'] = np.where(
                 req_data2.MACD > req_data2.MACD_SIGNAL, 1, 0)
 
@@ -336,35 +343,38 @@ def resample(csv_filename, period, resampling_multiplier, exchange,
     df_csv.unix_timestamp = pd.to_datetime(
         df_csv.unix_timestamp, unit="s", utc=True)
     df_csv = df_csv.reset_index()
+
     for indicator in indicator_list:
         if indicator not in df_csv.columns:
             df_csv[indicator] = np.nan
+
     df_csv = df_csv.set_index(['coin', 'exchange', 'unix_timestamp'])
     data = list(df_csv.index.get_level_values(0).unique())
     i = 0
     all_dataframes = []
-    resampling_period = ""+str(resampling_multiplier) + \
-        frequency_resampling_period_mapping[period]
+    resampling_period = "" + str(resampling_multiplier) + \
+                        frequency_resampling_period_mapping[period]
     output_csv_filename = output_file_name
+
     for coin_name in data:
         coin_df = df_csv[df_csv.index.get_level_values(0) == coin_name]
         coin_df = coin_df.reset_index()
         coin_df = coin_df.sort_values(
             by=['exchange', 'unix_timestamp']).set_index(
-                ['coin', 'exchange', 'unix_timestamp'])
+            ['coin', 'exchange', 'unix_timestamp'])
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
         for key, item in df_groupby:
             req_data = df_groupby.get_group(key)
             req_data = req_data.resample(
                 resampling_period, level=2, closed='right',
                 label='right').agg({
-                    'open': 'first',
-                    'high': 'max',
-                    'low': 'min',
-                    'close': 'last',
-                    'volumeto': 'sum',
-                    'volumefrom': 'sum'
-                })
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volumeto': 'sum',
+                'volumefrom': 'sum'
+            })
 
             req_data['coin'] = coin_name
             req_data['exchange'] = key
@@ -419,7 +429,7 @@ def delete_latest_period_data(csv_filename, datetimeformat_string):
         coin_df = coin_df.reset_index()
         coin_df = coin_df.sort_values(
             by=['exchange', 'unix_timestamp']).set_index(
-                ['coin', 'exchange', 'unix_timestamp'])
+            ['coin', 'exchange', 'unix_timestamp'])
 
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
         for key, item in df_groupby:
@@ -441,7 +451,7 @@ def update_csv_to_latest(period='1day',
     df_coin_period = delete_latest_period_data(csv_filename,
                                                datetimeStringformat_to_csv)
 
-    #Updated Dataframe
+    # Updated Dataframe
     csv_column_order = df_coin_period.columns.tolist()
     df_coin_period = df_coin_period.set_index(keys=['coin', 'exchange'])
 
@@ -458,7 +468,7 @@ def update_csv_to_latest(period='1day',
         # Group by exchange, sort on timestamp, and get the last row of that particular coin
         last_update = df_coin_period_coin.groupby(
             'exchange', group_keys=False).apply(
-                lambda c: c.sort_values(by='unix_timestamp').tail(1))
+            lambda c: c.sort_values(by='unix_timestamp').tail(1))
         logging.info("-" * 10 + " For coin - {}".format(coin))
 
         for exchange in last_update.index.values:  # For every coin exchange combination
@@ -489,7 +499,7 @@ def update_csv_to_latest(period='1day',
 
                 logging.info(
                     "Updating data for {coin}-{exchange} from {last_updated_time}".
-                    format(
+                        format(
                         coin=coin,
                         exchange=exchange,
                         last_updated_time=last_updated_time))
@@ -531,8 +541,8 @@ def update_csv_to_latest(period='1day',
             subset=['coin', 'exchange', 'unix_timestamp'], inplace=True)
         df_coin_period.set_index(['coin', 'exchange',
                                   'unix_timestamp']).to_csv(
-                                      csv_filename,
-                                      date_format=datetimeStringformat_to_csv)
+            csv_filename,
+            date_format=datetimeStringformat_to_csv)
 
 
 def update_indicator_BTC(csv_filename, periods, timeframe,
@@ -554,7 +564,7 @@ def update_indicator_BTC(csv_filename, periods, timeframe,
         coin_df = coin_df.reset_index()
         coin_df = coin_df.sort_values(
             by=['exchange', 'unix_timestamp']).set_index(
-                ['coin', 'exchange', 'unix_timestamp'])
+            ['coin', 'exchange', 'unix_timestamp'])
 
         df_groupby = coin_df.groupby(['exchange'], group_keys=False)
         for key, item in df_groupby:
@@ -575,13 +585,13 @@ def update_indicator_BTC(csv_filename, periods, timeframe,
                 continue
             req_data2[
                 'UPPER_BOLLINGER_BAND_VALUE'] = pyti.bollinger_bands.upper_bollinger_band(
-                    req_data2.close.values, 20)
+                req_data2.close.values, 20)
             req_data2[
                 'MIDDLE_BOLLINGER_BAND_VALUE'] = pyti.bollinger_bands.middle_bollinger_band(
-                    req_data2.close.values, 20)
+                req_data2.close.values, 20)
             req_data2[
                 'LOWER_BOLLINGER_BAND_VALUE'] = pyti.bollinger_bands.lower_bollinger_band(
-                    req_data2.close.values, 20)
+                req_data2.close.values, 20)
             df_csv.update(req_data2)
             i = i + 1
             print(coin_name, i)
@@ -601,7 +611,6 @@ def changeCSVDateTimeFormat(csv_filename):
 
 
 if __name__ == '__main__':
-
     coins_list_from_exchange = setupExchanges(list_of_exchanges)
     update_and_delete_coin_exchange_combination(
         'all_coins_day_full_1day.csv', 'all_coins_day_full_1day_new_coins.csv',
@@ -756,7 +765,7 @@ if __name__ == '__main__':
 
     changeCSVDateTimeFormat('BTC_Bitfinex_hour_full_1hour.csv')
 
-    #Scheduler code
+    # Scheduler code
     scheduler = BackgroundScheduler()
     scheduler.start()
 

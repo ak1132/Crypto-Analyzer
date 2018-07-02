@@ -53,22 +53,21 @@ def get_url(query_name, **kwargs):
             for argument in query_data['parameters']['required']):
         logging.info("Not all required arguments provided for {query}. "
                      "Required arguments are {args}.".format(
-                         query=query_name,
-                         args=query_data['parameters']['required']))
+            query=query_name,
+            args=query_data['parameters']['required']))
         return None
     else:
         possible_query_arguments = list(
             query_data.get('parameters',
                            {}).get('required', {}).keys()) + list(
-                               query_data.get('parameters', {}).get(
-                                   'additional', {}).keys())
+            query_data.get('parameters', {}).get(
+                'additional', {}).keys())
         for argument, value in kwargs.items():
             if argument in possible_query_arguments:
                 query_arguments.append("{argument}={value}".format(
                     argument=argument, value=format_parameter(value)))
 
     query = query_url + '?' + '&'.join(query_arguments)
-    # print(query)
     return query
 
 
@@ -76,7 +75,6 @@ def query_cryptocompare(url):
     """ Query CryptoCompare API """
     try:
         response = requests.get(url).json()
-        # print(response)
     except Exception as e:
         logging.error("Failure while querying {query}. \n{err}".format(
             query=url, err=e))
@@ -94,7 +92,6 @@ def query_cryptocompare(url):
 def convert_timestamp(timestamp):
     """ Convert timestamp into readable datetime """
     try:
-        # return datetime.datetime.fromtimestamp(int(timestamp)).strftime('%d-%m-%Y %H:%M')
         return timestamp
     except Exception as e:
         logging.debug(e)
@@ -215,7 +212,6 @@ def get_historical_price_hour(coin,
             e=exchange,
             limit=limit,
             **kwargs))
-    # print(resp)
     return get_readable_df(resp)
 
 
