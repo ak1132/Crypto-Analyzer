@@ -528,6 +528,10 @@ def update_csv_to_latest(period='1day',
             date_format=datetimeStringformat_to_csv)
 
 
+indicator_list_btc = ['unix_timestamp', 'UPPER_BOLLINGER_BAND_VALUE', 'MIDDLE_BOLLINGER_BAND_VALUE',
+                      'LOWER_BOLLINGER_BAND_VALUE']
+
+
 def update_indicator_BTC(csv_filename, periods, timeframe,
                          datetimeformat_string):
     """ Update the given csv_file with new column values for corr rows """
