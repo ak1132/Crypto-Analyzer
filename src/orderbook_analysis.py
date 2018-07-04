@@ -1,18 +1,6 @@
 import ccxt
-import os
-import time
-import talib
 import logging
-import requests
-import datetime
-import importlib
-import dateutil.parser
-import numpy as np
 import pandas as pd
-from collections import defaultdict
-import sys
-import inspect
-import pyti
 
 EXCHANGES = ['Bittrex', 'Binance', 'Kucoin', 'HuobiPro', 'Cryptopia', 'IDEX']
 bittrex_exchange = ccxt.bittrex()

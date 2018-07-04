@@ -12,8 +12,9 @@ import logging
 import requests
 import datetime
 import pandas as pd
+import os
 
-api_queries = 'api_queries.yaml'
+api_queries = os.curdir + '\\resources\\api_queries.yaml'
 
 with open(api_queries, 'r') as f:
     try:

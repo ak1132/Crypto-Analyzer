@@ -1,9 +1,5 @@
-import json 
-import requests 
+import requests
 import pandas as pd
-import numpy as np
-import sys
-import collections
 
 r = requests.get('https://api.coinmarketcap.com/v2/listings/')
 length = len(r.json()['data'])

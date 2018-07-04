@@ -1,0 +1,175 @@
+---
+# List details and arguments for API queries for https://min-api.cryptocompare.com/
+
+base_url: https://min-api.cryptocompare.com
+api_endpoint: https://min-api.cryptocompare.com/data
+old_api_endpoint: https://www.cryptocompare.com/api/data
+
+price:
+  name: Single Symbol Price
+  url: /price
+  details: Get the current price of any cryptocurrency in any other currency
+  parameters:
+    required:
+      fsym: cryptocurrency symbol of interest
+      tsyms: comma separated cryptocurrency symbol list to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      extraParams: name of user application
+  rate_limit:
+    hour: 100000
+    minute: 1000
+    second: 50
+  usage: "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD,EUR&e=Coinbase&extraParams=your_app_name"
+
+pricemulti:
+  name: Multiple Symbol Price
+  url: /pricemulti
+  details: Get the current price of multiple cryptocurrencies in any other currency
+  parameters:
+    required:
+      fsyms: comma separated cryptocurrency symbols list
+      tsyms: comma separated cryptocurrency symbol list to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      extraParams: name of user application
+  rate_limit:
+    hour: 150000
+    minute: 1000
+    second: 50
+  usage: "https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,ETH&tsyms=USD&e=Coinbase&extraParams=your_app_name"
+
+pricemultifull:
+  name: Multiple Symbol Full Data
+  url: /pricemultifull
+  details: Get all the current trading info (price, vol, open, high, low etc) of any list of cryptocurrencies in any other currency
+  parameters:
+    required:
+      fsyms: comma separated cryptocurrency symbols list
+      tsyms: comma separated cryptocurrency symbol list to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      extraParams: name of user application
+  rate_limit:
+    hour: 150000
+    minute: 1000
+    second: 50
+  usage: "https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC,ETH&tsyms=USD&e=Coinbase&extraParams=your_app_name"
+
+histoday:
+  name: Historical Daily
+  url: /histoday
+  details: Get OHCLV daily historical data
+  parameters:
+    required:
+      fsym: cryptocurrency symbol of interest
+      tsym: currency symbol to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      aggregate: time period to aggregate the data over (days/ hours/ minutes)
+      limit: number of data points to return
+      allData: returns all data
+      toTs: last unix timestamp to return data for
+      extraParams: name of user application
+  rate_limit:
+    hour: 8000
+    minute: 300
+    second: 15
+  usage: "https://min-api.cryptocompare.com/data/histoday?fsym=BTC&tsym=ETH&limit=30&aggregate=1&e=CCCAGG"
+
+histohour:
+  name: Historical Hourly
+  url: /histohour
+  details: Get OHCLV hourly historical data
+  parameters:
+    required:
+      fsym: cryptocurrency symbol of interest
+      tsym: currency symbol to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      aggregate: time period to aggregate the data over (days/ hours/ minutes)
+      limit: number of data points to return
+      toTs: last unix timestamp to return data for
+      extraParams: name of user application
+  rate_limit:
+    hour: 8000
+    minute: 300
+    second: 15
+  usage: "https://min-api.cryptocompare.com/data/histohour?fsym=ETH&tsym=BTC&limit=24&aggregate=1&toTs=1452680400&extraParams=your_app_name"
+
+histominute:
+  name: Historical Minute
+  url: /histominute
+  details: Get OHCLV each minute historical data (max for last 7 days)
+  parameters:
+    required:
+      fsym: cryptocurrency symbol of interest
+      tsym: currency symbol to convert into
+    additional:
+      e: exchange to obtain data from (CCCAGG default)
+      aggregate: time period to aggregate the data over (days/ hours/ minutes)
+      limit: number of data points to return
+      toTs: last unix timestamp to return data for
+      extraParams: name of user application
+  rate_limit:
+    hour: 8000
+    minute: 300
+    second: 15
+  usage: "https://min-api.cryptocompare.com/data/histominute?fsym=ETH&tsym=USD&limit=60&aggregate=3&e=Kraken&extraParams=your_app_name"
+
+pricehistorical:
+  name: Historical Price at Timsetamp
+  url: /pricehistorical
+  details: Get price of any cryptocurrency in any other currency at a given timestamp (Close, MidHighLow, VolFVolT)
+  parameters:
+    required:
+      fsym: cryptocurrency symbol of interest
+      tsyms: comma separated cryptocurrency symbols list to convert into
+    additional:
+      ts: unix timestamp of interest
+      e: exchange to obtain data from (CCCAGG default)
+      calculationType: >
+        type of average to calculate 
+        (Close - a Close of the day close price, 
+        MidHighLow - the average between the 24 H high and low, 
+        VolFVolT - the total volume to / the total volume from)
+      extraParams: name of user application
+  rate_limit:
+    hour: 8000
+    minute: 300
+    second: 15
+  usage: "https://min-api.cryptocompare.com/data/pricehistorical?fsym=BTC&tsyms=USD,EUR&e=Coinbase&ts=1452680400&extraParams=your_app_name"
+
+exchanges:
+  name: All exchanges on CryptoCompare
+  url: /all/exchanges
+  parameters:
+    additional:
+      extraParams: name of user application
+  rate_limit:
+    hour: 150000
+    minute: 1000
+    second: 50
+  usage: "https://min-api.cryptocompare.com/data/all/exchanges"
+
+coinlist:
+  name: All coins on CryptoCompare
+  url: /all/coinlist
+  parameters:
+    additional:
+      extraParams: name of user application
+  rate_limit:
+    hour: 150000
+    minute: 1000
+    second: 50
+  usage: "https://min-api.cryptocompare.com/data/all/conilist"
+  alternate: https://www.cryptocompare.com/api/data/coinlist/
+
+calls_left:
+  name: Get the rate limits left for you on the histo, price and news paths in the current hour, minute and second
+  url: /stats/rate/limit
+  rate_limit:
+    hour: 500
+    minute: 20
+    second: 1
+  usage: "https://min-api.cryptocompare.com/stats/rate/hour/limit"

@@ -1,7 +1,7 @@
 # coding: utf-8
 
 # Created on:   03/03/2018  Aditya Shirode
-# Modified on:  03/08/2018  Aditya Shirode
+# Modified on:  07/03/2018  Amogh Kulkarni
 
 # TO DO:
 # - Make generic functions for tasks for modularity
@@ -38,51 +38,23 @@ from pyti import simple_moving_average
 from pyti import stochrsi
 from pyti import on_balance_volume
 import cryptocompare as ccw
+import configparser
 from database import DbClient
+
+configParser = configparser.ConfigParser()
+configParser.read(os.curdir + '\\resources\config.ini')
+relativePath = os.path.abspath(os.path.join(os.curdir, "..")) + '\\'
+
+dbClient = DbClient()
 
 LOGGING_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
 logging.basicConfig(format=LOGGING_FORMAT)
 
-PRICE = 'PRICE'
-HIGH = 'HIGH24HOUR'
-LOW = 'LOW24HOUR'
-VOLUME = 'VOLUME24HOUR'
-CHANGE = 'CHANGE24HOUR'
-CHANGE_PERCENT = 'CHANGEPCT24HOUR'
-MARKETCAP = 'MKTCAP'
-NPERIODS = 100
-TIMEFRAME = 'Day'
 datetimeStringformat_to_csv = "%d-%m-%Y %H:%M"
 CURR = 'BTC'
-EXCHANGE = 'CCCAGG'
 COIN = 'ETH'
 COIN_LIST = ['BTC', 'ETH', 'XRP']
 EXCHANGES = ['Bittrex', 'Binance', 'Kucoin', 'HuobiPro', 'Cryptopia', 'IDEX']
-bittrex_exchange = ccxt.bittrex()
-binance_exchange = ccxt.binance()
-kucoin_exchange = ccxt.kucoin()
-huobiPro_exchange = ccxt.huobipro()
-cryptopia_exchange = ccxt.cryptopia()
-bitmex_exchange = ccxt.bitmex()
-list_of_exchanges = [
-    bittrex_exchange, binance_exchange, kucoin_exchange, huobiPro_exchange,
-    cryptopia_exchange
-]
-
-# Technical Analysis Settings
-EMA_FAST = 10
-EMA_SLOW = 20
-RSI_PERIOD = 14
-RSI_OVER_BOUGHT = 70
-RSI_OVER_SOLD = 30
-RSI_AVG_PERIOD = 15
-MACD_FAST = 12
-MACD_SLOW = 26
-MACD_SIGNAL = 9
-STOCH_K = 14
-STOCH_D = 3
-STOCH_OVER_BOUGHT = 70
-STOCH_OVER_SOLD = 30
 
 # Maps csv (future data objects) to period granularity
 # If we store all data together in a single data source,
@@ -121,10 +93,21 @@ indicator_list = [
 # For every exchange, fetch it's markets. Then depending on the JSON returned,
 # prepare a list of coins for which historical data has to be downloaded.
 
+def get_exchange_list():
+    bittrex_exchange = ccxt.bittrex()
+    binance_exchange = ccxt.binance()
+    kucoin_exchange = ccxt.kucoin()
+    huobiPro_exchange = ccxt.huobipro()
+    cryptopia_exchange = ccxt.cryptopia()
+    bitmex_exchange = ccxt.bitmex()
+    list_of_exchanges = [
+        bittrex_exchange, binance_exchange, kucoin_exchange, huobiPro_exchange,
+        cryptopia_exchange
+    ]
+    return list_of_exchanges
+
 
 def setupExchanges(list_of_exchanges):
-    done = False
-    i = 0
     var_quote = ""
     coin_exchange_combination = {}
     for exchange in list_of_exchanges:
@@ -150,10 +133,9 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
                                                 csv_filename_write, timeframe,
                                                 coin_exchange_combination):
     # For every exchange, download the new coins and delete coins which are delisted from that exchange
-    csv_all_coins_full = csv_filename_read
-    csv_all_coins_full_new = csv_filename_write
+    csv_all_coins_full = relativePath + "data\\" + csv_filename_read
+    csv_all_coins_full_new = relativePath + "data\\" + csv_filename_write
     not_updated = defaultdict(list)
-    existing_coin_exchange = []
     # If the csv already exists, find out which coins and exchanges have already been added
     if os.path.isfile(csv_all_coins_full):
         df_csv_all_coins_full = pd.read_csv(
@@ -164,6 +146,7 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
 
         for a, b in existing_coin_exchange:
             coin_exchange_combination_in_excel.setdefault(a, []).append(b)
+
     number_of_coins = 0
     coin_exchange_combination_to_delete = {}
 
@@ -172,29 +155,26 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
             continue
         coins_list_from_exchange = coin_exchange_combination[exchange]
         coins_list_from_excel = coin_exchange_combination_in_excel[exchange]
-        coins_to_download = list(
-            set(coins_list_from_exchange) - set(coins_list_from_excel))
-        coins_to_delete = list(
-            set(coins_list_from_excel) - set(coins_list_from_exchange))
+        coins_to_download = list(set(coins_list_from_exchange) - set(coins_list_from_excel))
+        coins_to_delete = list(set(coins_list_from_excel) - set(coins_list_from_exchange))
         coin_exchange_combination_to_delete[exchange] = coins_to_delete
-        logging.log(exchange, coins_to_download)
+
         for symbol in coins_to_download:
             # For every symbol-exchange combination, if it is present in CSV,don't download historical Data for it.
             try:
                 # Can't fetch the same symbol in same symbol rate
-                print(symbol, exchange, "In Try Block")
-                func = function_period_mapping[timeframe]
+                mapped_period_function = function_period_mapping[timeframe]
                 to_curr = 'BTC'
+
                 if symbol == "BTC":
                     to_curr = "USD"
+
                 if exchange == 'IDEX':
                     to_curr = 'ETH'
+
                 if symbol is not to_curr:
-                    df_coin_all = func(
-                        coin=symbol,
-                        to_curr=to_curr,
-                        timestamp=time.time(),
-                        exchange=exchange)
+                    df_coin_all = mapped_period_function(coin=symbol, to_curr=to_curr, timestamp=time.time(),
+                                                         exchange=exchange)
 
                 if df_coin_all.empty:
                     not_updated[exchange].append(symbol)
@@ -205,21 +185,20 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
                         df_coin_all.unix_timestamp, unit="s", utc=True)
                     df_coin_all = df_coin_all.reset_index().set_index(
                         ['coin', 'exchange', 'unix_timestamp'])
+
                     # If csv does not exist, write, else append
                     if not os.path.isfile(csv_all_coins_full_new):
                         df_coin_all.to_csv(csv_all_coins_full_new, mode='w')
                     else:
-                        df_coin_all.to_csv(
-                            csv_all_coins_full_new, mode='a', header=False)
+                        df_coin_all.to_csv(csv_all_coins_full_new, mode='a', header=False)
                     number_of_coins = number_of_coins + 1
 
             except Exception as e:
                 logging.error(e)
                 not_updated[exchange].append(symbol)
-
-    logging.error(
-        "Did not update the following. Try again.\n {not_updated}".format(
-            not_updated=not_updated))
+                logging.error(
+                    "Did not update the following. Try again.\n {not_updated}".format(
+                        not_updated=not_updated))
 
     delete_coins_from_csv(coin_exchange_combination_to_delete,
                           df_csv_all_coins_full.reset_index(),
@@ -236,6 +215,8 @@ def delete_coins_from_csv(coin_exchange_combination_to_delete,
                     (df_csv_all_coins_full['exchange'] == exchange))]
     df_csv_all_coins_full.set_index(
         ['coin', 'exchange', 'unix_timestamp']).to_csv(csv_filename_read)
+
+    dbClient.save_to_db(pd.read_csv(csv_filename_read), 'all coins')
 
 
 def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
@@ -256,25 +237,25 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
     for coin_name in data:
         coin_df = df_csv[df_csv.index.get_level_values(0) == coin_name]
         coin_df = coin_df.reset_index()
-        coin_df = coin_df.sort_values(
-            by=['exchange', 'unix_timestamp']).set_index(
+        coin_df = coin_df.sort_values(by=['exchange', 'unix_timestamp']).set_index(
             ['coin', 'exchange', 'unix_timestamp'])
-        df_groupby = coin_df.groupby(['exchange'], group_keys=False)
-        for key, item in df_groupby:
-            req_data = df_groupby.get_group(key)
+
+        df_by_exchange = coin_df.groupby(['exchange'], group_keys=False)
+
+        for key, item in df_by_exchange:
+            req_data = df_by_exchange.get_group(key)
             req_data2 = req_data.iloc[-periods:]
             start_date = req_data2.index.get_level_values(2)[0]
-            end_date = req_data2.index.get_level_values(2)[req_data2.shape[0] -
-                                                           1]
-            req_data2 = req_data[
-                (req_data.index.get_level_values(2) >= start_date)
-                & (req_data.index.get_level_values(2) <= end_date)]
+            end_date = req_data2.index.get_level_values(2)[req_data2.shape[0] - 1]
+            req_data2 = req_data[(req_data.index.get_level_values(2) >= start_date)
+                                 & (req_data.index.get_level_values(2) <= end_date)]
             np_volumeto = np.array(req_data2.volumeto.values, dtype='f8')
 
             if len(np_volumeto) < 20:
                 j = j + 1
                 print(coin_name, j, " Not Updated")
                 continue
+
             req_data2[
                 'BBANDS_BANDWIDTH_PERCENT'] = pyti.bollinger_bands.percent_b(
                 req_data2.close.values, 20)
@@ -288,12 +269,12 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 'STOCH_PERCENT_D_MONEY_FLOW_INDEX'] = pyti.simple_moving_average.simple_moving_average(
                 req_data2.STOCH_PERCENT_K_MONEY_FLOW_INDEX.values, 3)
             req_data2['RSI'] = talib.func.RSI(
-                req_data2.close.values, timeperiod=RSI_PERIOD)
+                req_data2.close.values, timeperiod=configParser.getint('technical_settings', 'rsi_period'))
             req_data2['RSI_OVER_BOUGHT'] = np.where(
-                (req_data2.RSI >= RSI_OVER_BOUGHT) &
+                (req_data2.RSI >= configParser.getint('technical_settings', 'rsi_over_bought')) &
                 (req_data2.RSI <= req_data2.RSI.shift(1)), 1, 0)
             req_data2['RSI_OVER_SOLD'] = np.where(
-                (req_data2.RSI <= RSI_OVER_SOLD) &
+                (req_data2.RSI <= configParser.getint('technical_settings', 'rsi_over_sold')) &
                 (req_data2.RSI >= req_data2.RSI.shift(1)), 1, 0)
             req_data2['STOCHRSI_K'] = pyti.stochrsi.stochrsi(
                 req_data2.close.values, 14)
@@ -306,11 +287,11 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
                 'STOCH_PERCENT_D'] = pyti.simple_moving_average.simple_moving_average(
                 req_data2.STOCH_PERCENT_K.values, 3)
             req_data2['STOCH_OVER_BOUGHT'] = np.where(
-                (req_data2.STOCH_PERCENT_K >= STOCH_OVER_BOUGHT) &
+                (req_data2.STOCH_PERCENT_K >= configParser.getint('technical_settings', 'stoch_over_bought')) &
                 (req_data2.STOCH_PERCENT_K <=
                  req_data2.STOCH_PERCENT_K.shift(1)), 1, 0)
             req_data2['STOCH_OVER_SOLD'] = np.where(
-                (req_data2.STOCH_PERCENT_K <= STOCH_OVER_SOLD) &
+                (req_data2.STOCH_PERCENT_K <= configParser.getint('technical_settings', 'stoch_over_sold')) &
                 (req_data2.STOCH_PERCENT_K >=
                  req_data2.STOCH_PERCENT_K.shift(1)), 1, 0)
             req_data2['SMA_FAST'] = talib.func.SMA(req_data2.close.values, 7)
@@ -326,15 +307,17 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             req_data2['MACD'], req_data2[
                 'MACD_SIGNAL'], MACD_HISTOGRAM = talib.func.MACD(
                 req_data2.close.values,
-                fastperiod=MACD_FAST,
-                slowperiod=MACD_SLOW,
-                signalperiod=MACD_SIGNAL)
+                fastperiod=configParser.getint('technical_settings', 'macd_fast'),
+                slowperiod=configParser.getint('technical_settings', 'macd_slow'),
+                signalperiod=configParser.getint('technical_settings', 'macd_signal'))
             req_data2['MACD_TEST'] = np.where(
                 req_data2.MACD > req_data2.MACD_SIGNAL, 1, 0)
 
             df_csv.update(req_data2)
             i = i + 1
     df_csv.to_csv(csv_filename, date_format=datetimeStringformat_to_csv)
+    df_csv = pd.read_csv(csv_filename)
+    dbClient.save_to_db(df_csv, 'technical data')
 
 
 def resample(csv_filename, period, resampling_multiplier, exchange,
@@ -611,19 +594,21 @@ def changeCSVDateTimeFormat(csv_filename):
 
 
 if __name__ == '__main__':
-    coins_list_from_exchange = setupExchanges(list_of_exchanges)
+    coins_list_from_exchange = setupExchanges(get_exchange_list())
+
     update_and_delete_coin_exchange_combination(
         'all_coins_day_full_1day.csv', 'all_coins_day_full_1day_new_coins.csv',
         '1dayfull', coins_list_from_exchange)
+
     coins_list = [""]
-    setupExchanges(list_of_exchanges)
+
     update_and_delete_coin_exchange_combination(
         'all_coins_hour_full_1hour_.csv', 'all_coins_hour_full_1hour_.csv',
         '1hour', coins_list)
 
     update_indicator('all_coins_day_full_1day.csv', 250, '1day',
                      datetimeStringformat_to_csv)
-
+    '''
     update_indicator('all_coins_day_full_3days.csv', 250, '3day',
                      datetimeStringformat_to_csv)
 
@@ -751,12 +736,6 @@ if __name__ == '__main__':
     update_indicator_BTC('BTC_Bitfinex_hour_full_12hours.csv', 250, '12hour',
                          datetimeStringformat_to_csv)
 
-    columns_order = [
-        'coin', 'exchange', 'unix_timestamp', 'time', 'open', 'high', 'low',
-        'close', 'volumefrom', 'volumeto', 'UPPER_BOLLINGER_BAND_VALUE',
-        'MIDDLE_BOLLINGER_BAND_VALUE', 'LOWER_BOLLINGER_BAND_VALUE'
-    ]
-
     changeCSVDateTimeFormat('all_coins_day_full_1day.csv')
 
     changeCSVDateTimeFormat('all_coins_day_full_1day_Cryptopia.csv')
@@ -764,7 +743,12 @@ if __name__ == '__main__':
     changeCSVDateTimeFormat('BTC_Bitfinex_day_full_1day.csv')
 
     changeCSVDateTimeFormat('BTC_Bitfinex_hour_full_1hour.csv')
-
+'''
+    columns_order = [
+        'coin', 'exchange', 'unix_timestamp', 'time', 'open', 'high', 'low',
+        'close', 'volumefrom', 'volumeto', 'UPPER_BOLLINGER_BAND_VALUE',
+        'MIDDLE_BOLLINGER_BAND_VALUE', 'LOWER_BOLLINGER_BAND_VALUE'
+    ]
     # Scheduler code
     scheduler = BackgroundScheduler()
     scheduler.start()

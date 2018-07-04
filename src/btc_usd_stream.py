@@ -1,20 +1,5 @@
 from lomond import WebSocket
-import ccxt
-import os
-import time
-import talib
-import logging
-import requests
-import datetime
-import importlib
-import dateutil.parser
-import numpy as np
 import pandas as pd
-from importlib import reload
-from collections import defaultdict
-import sys
-import inspect
-import pyti
 import math
 
 df_csv_1day = pd.read_csv(
