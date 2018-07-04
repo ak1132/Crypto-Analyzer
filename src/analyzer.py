@@ -216,7 +216,9 @@ def delete_coins_from_csv(coin_exchange_combination_to_delete,
     df_csv_all_coins_full.set_index(
         ['coin', 'exchange', 'unix_timestamp']).to_csv(csv_filename_read)
 
-    dbClient.save_to_db(pd.read_csv(csv_filename_read), 'all coins')
+    df = pd.read_csv(csv_filename_read)
+    df.index = pd.to_datetime(df.index, unit='s')
+    dbClient.save_to_db(df, 'all coins')
 
 
 def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
@@ -317,6 +319,7 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             i = i + 1
     df_csv.to_csv(csv_filename, date_format=datetimeStringformat_to_csv)
     df_csv = pd.read_csv(csv_filename)
+    df_csv.index = pd.to_datetime(df_csv.index, unit='s')
     dbClient.save_to_db(df_csv, 'technical data')
 
 
