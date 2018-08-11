@@ -5,8 +5,8 @@ Measurement is equivalent to table in SQL
 Tag is a key-value pair of columns that get indexed by the database
 Field is a key value pair of columns that do not get indexed by the database
 
-# Created on:  08/10/2018
-# Author  Amogh Kulkarni
+Created on:  08/10/2018
+Author:  Amogh Kulkarni
 '''
 
 from influxdb import DataFrameClient
@@ -46,6 +46,7 @@ class DbClient:
 
     def __init__(self):
         """ Create singleton instance """
+
         # Check whether we already have an instance
         if DbClient.__instance is None:
             # Create and remember instance
@@ -63,7 +64,7 @@ class DbClient:
         return setattr(self.__instance, attr, value)
 
     def save_to_db(self, df, measurement, tags=None):
-
+        """ Saving dataframe to influx db """
         if tags is None:
             print("Write DataFrame")
             self.client.write_points(
@@ -74,20 +75,27 @@ class DbClient:
                 df, database=self.database, measurement=measurement, tags=tags, protocol='json')
 
     def fetch_from_db(self, query):
+        """ Fetching data from influx db """
+
         print("Read DataFrame")
         return self.client.query(query)
 
     def create_db(self):
+        """ Creating the influx db database """
         self.client.create_database('crypto_analyzer')
 
     def drop_db(self):
+        """ Dropping the influx db database """
         self.client.drop_database(self.database)
 
     def df_int_to_float(self, df):
+        """ Converting the int data type columns to float """
+
         for i in df.select_dtypes('int64').columns.values:
             df[i] = df[i].astype(float)
         return df
 
     def is_existing(self):
+        """ Checks if database already exists """
         result = self.client.get_list_database()
         return result is not None or len(result) > 0
