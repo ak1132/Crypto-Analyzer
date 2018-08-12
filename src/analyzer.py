@@ -38,11 +38,10 @@ from pyti import simple_moving_average
 from pyti import stochrsi
 from pyti import on_balance_volume
 import cryptocompare as ccw
-import configparser
 from database import DbClient
+from configEngine import ConfigEngine
 
-configParser = configparser.ConfigParser()
-configParser.read(os.curdir + '\\resources\config.ini')
+configParser = ConfigEngine()
 relativePath = os.path.abspath(os.path.join(os.curdir, "..")) + '\\'
 
 dbClient = DbClient()
@@ -155,8 +154,10 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
             continue
         coins_list_from_exchange = coin_exchange_combination[exchange]
         coins_list_from_excel = coin_exchange_combination_in_excel[exchange]
-        coins_to_download = list(set(coins_list_from_exchange) - set(coins_list_from_excel))
-        coins_to_delete = list(set(coins_list_from_excel) - set(coins_list_from_exchange))
+        coins_to_download = list(
+            set(coins_list_from_exchange) - set(coins_list_from_excel))
+        coins_to_delete = list(
+            set(coins_list_from_excel) - set(coins_list_from_exchange))
         coin_exchange_combination_to_delete[exchange] = coins_to_delete
 
         for symbol in coins_to_download:
@@ -190,7 +191,8 @@ def update_and_delete_coin_exchange_combination(csv_filename_read,
                     if not os.path.isfile(csv_all_coins_full_new):
                         df_coin_all.to_csv(csv_all_coins_full_new, mode='w')
                     else:
-                        df_coin_all.to_csv(csv_all_coins_full_new, mode='a', header=False)
+                        df_coin_all.to_csv(
+                            csv_all_coins_full_new, mode='a', header=False)
                     number_of_coins = number_of_coins + 1
 
             except Exception as e:
@@ -211,14 +213,12 @@ def delete_coins_from_csv(coin_exchange_combination_to_delete,
         coins_list_to_delete = coin_exchange_combination_to_delete[exchange]
         for symbol in coins_list_to_delete:
             df_csv_all_coins_full = df_csv_all_coins_full[~(
-                    (df_csv_all_coins_full['coin'] == symbol) &
-                    (df_csv_all_coins_full['exchange'] == exchange))]
+                (df_csv_all_coins_full['coin'] == symbol) &
+                (df_csv_all_coins_full['exchange'] == exchange))]
     df_csv_all_coins_full.set_index(
         ['coin', 'exchange', 'unix_timestamp']).to_csv(csv_filename_read)
 
-    df = pd.read_csv(csv_filename_read)
-    df.index = pd.to_datetime(df.index, unit='s')
-    dbClient.save_to_db(df, 'all coins')
+    dbClient.save_to_db(pd.read_csv(csv_filename_read), 'all coins')
 
 
 def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
@@ -248,7 +248,8 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             req_data = df_by_exchange.get_group(key)
             req_data2 = req_data.iloc[-periods:]
             start_date = req_data2.index.get_level_values(2)[0]
-            end_date = req_data2.index.get_level_values(2)[req_data2.shape[0] - 1]
+            end_date = req_data2.index.get_level_values(
+                2)[req_data2.shape[0] - 1]
             req_data2 = req_data[(req_data.index.get_level_values(2) >= start_date)
                                  & (req_data.index.get_level_values(2) <= end_date)]
             np_volumeto = np.array(req_data2.volumeto.values, dtype='f8')
@@ -309,8 +310,10 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             req_data2['MACD'], req_data2[
                 'MACD_SIGNAL'], MACD_HISTOGRAM = talib.func.MACD(
                 req_data2.close.values,
-                fastperiod=configParser.getint('technical_settings', 'macd_fast'),
-                slowperiod=configParser.getint('technical_settings', 'macd_slow'),
+                fastperiod=configParser.getint(
+                    'technical_settings', 'macd_fast'),
+                slowperiod=configParser.getint(
+                    'technical_settings', 'macd_slow'),
                 signalperiod=configParser.getint('technical_settings', 'macd_signal'))
             req_data2['MACD_TEST'] = np.where(
                 req_data2.MACD > req_data2.MACD_SIGNAL, 1, 0)
@@ -319,7 +322,6 @@ def update_indicator(csv_filename, periods, timeframe, datetimeformat_string):
             i = i + 1
     df_csv.to_csv(csv_filename, date_format=datetimeStringformat_to_csv)
     df_csv = pd.read_csv(csv_filename)
-    df_csv.index = pd.to_datetime(df_csv.index, unit='s')
     dbClient.save_to_db(df_csv, 'technical data')
 
 
@@ -354,13 +356,13 @@ def resample(csv_filename, period, resampling_multiplier, exchange,
             req_data = req_data.resample(
                 resampling_period, level=2, closed='right',
                 label='right').agg({
-                'open': 'first',
-                'high': 'max',
-                'low': 'min',
-                'close': 'last',
-                'volumeto': 'sum',
-                'volumefrom': 'sum'
-            })
+                    'open': 'first',
+                    'high': 'max',
+                    'low': 'min',
+                    'close': 'last',
+                    'volumeto': 'sum',
+                    'volumefrom': 'sum'
+                })
 
             req_data['coin'] = coin_name
             req_data['exchange'] = key
@@ -485,7 +487,7 @@ def update_csv_to_latest(period='1day',
 
                 logging.info(
                     "Updating data for {coin}-{exchange} from {last_updated_time}".
-                        format(
+                    format(
                         coin=coin,
                         exchange=exchange,
                         last_updated_time=last_updated_time))

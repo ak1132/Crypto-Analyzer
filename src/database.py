@@ -12,9 +12,9 @@ Author:  Amogh Kulkarni
 from influxdb import DataFrameClient
 import configparser
 import os
+from configEngine import ConfigEngine
 
-configParser = configparser.ConfigParser()
-configParser.read(os.curdir + r'\\resources\\config.ini')
+configParser = ConfigEngine()
 
 
 class DbClient:
@@ -77,15 +77,19 @@ class DbClient:
     def fetch_from_db(self, query):
         """ Fetching data from influx db """
 
-        print("Read DataFrame")
+        print("Read from influx db")
         return self.client.query(query)
 
     def create_db(self):
         """ Creating the influx db database """
+
+        print("Create influx db")
         self.client.create_database('crypto_analyzer')
 
     def drop_db(self):
         """ Dropping the influx db database """
+
+        print("Influx database with all measurements")
         self.client.drop_database(self.database)
 
     def df_int_to_float(self, df):
