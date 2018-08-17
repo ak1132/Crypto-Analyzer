@@ -39,9 +39,10 @@ from pyti import stochrsi
 from pyti import on_balance_volume
 import cryptocompare as ccw
 from database import DbClient
-from configEngine import ConfigEngine
+import configparser
 
-configParser = ConfigEngine()
+configParser = configparser.ConfigParser()
+configParser.read(os.curdir + r'\\resources\\config.ini')
 relativePath = os.path.abspath(os.path.join(os.curdir, "..")) + '\\'
 
 dbClient = DbClient()
