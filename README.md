@@ -1,6 +1,6 @@
 # Crypto Analyzer
 
-A tool built in Python3 that uses data from cryptocurrency exchanges and calulcates the technical indictors to help user to invest in coins that may possibly give max returns.
+A tool built in Python3 that uses data from cryptocurrency exchanges and calulcates the technical indicators to help user to invest in coins that may possibly give max returns.
 
 ###Installation Notes 
 
