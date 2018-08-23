@@ -5,7 +5,7 @@ A tool built in Python3 that uses data from cryptocurrency exchanges and calulca
 ### Installation Notes 
 
 **To install TA-lib for 64 bit:**
-Download TA_Lib-0.x.xx-cp35‑cp35m‑win_amd64.whl from [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib).
+Download TA_Lib-0.x.xx-cp35‑cp35m‑win_amd64.whl (Python version 3.5) from [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib).
 And use command **pip install TA_Lib-0.x.xx-cp35‑cp35m‑win_amd64.whl**
 
 ### Libraries used :-
